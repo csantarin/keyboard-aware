@@ -6,7 +6,7 @@ export const KeyboardAwareWarning: FunctionComponent = (props) => {
 		<View style={{ top: 100 }}>
 			<View>
 				<Text>This is a Keyboard Aware Warning.</Text>
-			</View>			
+			</View>
 		</View>
 	);
 };
