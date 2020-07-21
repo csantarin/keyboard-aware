@@ -1,5 +1,10 @@
 {
   "name": "keyboard-aware",
+  "description": "A keyboard-awareness sandbox in React Native with functional components and Hooks",
+  "author": {
+    "name": "Cezar Andrew Villegas Santarin",
+    "email": "csantarin@moneylion.com"
+  },
   "version": "0.0.1",
   "private": true,
   "scripts": {
