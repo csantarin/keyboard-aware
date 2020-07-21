@@ -25,7 +25,7 @@ yarn
 4. Add the Android (root: [`/android`](./android)) and iOS (root: [`/ios`](./ios)) projects to Android Studio and Xcode, respectively. Additional troubleshootings:
 	- **Xcode**: ["Failed to set plugin placeholders" when loading the iOS project into Xcode.](https://programmingwithswift.com/easily-fix-failed-to-set-plugin-placeholders-in-xcode/)
 
-		1. Clean (`⇧+⌘+K`) the project.
+		1. Clean (`Shift+Cmd+K`) the project.
 		2. On the Project navigator, choose **KeyboardAware**. You will see a panel with tabs such as Info, Build Settings, Swift Packages.
 		3. On the same screen, choose **Targets** > **KeyboardAware**. You will see a panel with tabs starting with General, Capabilities, Resource Tags, etc.
 		4. On those tabs, choose **Build Phases**. You will see a list of dropdowns on the panel.
