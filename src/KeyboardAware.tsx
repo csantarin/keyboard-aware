@@ -1,5 +1,5 @@
-import React, { Component, FunctionComponent } from 'react';
-import { EmitterSubscription, Keyboard, View } from 'react-native';
+import React, { FunctionComponent } from 'react';
+import { View } from 'react-native';
 import { useKeyboardAwareState } from './hooks';
 import { KeyboardAwareWarning } from './KeyboardAwareWarning';
 
