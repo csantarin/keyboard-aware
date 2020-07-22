@@ -1,35 +1,16 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { Key, useState } from 'react';
-import { Keyboard, KeyboardEventName } from 'react-native';
+import { useState } from 'react';
+import { Keyboard, KeyboardEvent, KeyboardEventName, ScreenRect } from 'react-native';
+
 import { useKeyboardAwareState } from './useKeyboardAwareState';
 
-const setUpRenderedHook = (when?: 'will' | 'did', initialValue?: boolean) => renderHook(() => useKeyboardAwareState(initialValue, {
+const setUpRenderedHook = (when?: 'will' | 'did') => renderHook(() => useKeyboardAwareState({
 	when: when,
-	onShow(event, setKeyboardShown) {
-		setKeyboardShown(true);
-	},
-	onHide(event, setKeyboardShown) {
-		setKeyboardShown(false);
-	},
 }));
 
 describe('useKeyboardAwareState', () => {
-	it('should be initializable', () => {
-		const testFalseInitial = () => {
-			const initialFalseRenderedHook = setUpRenderedHook('did', false);
-			expect(initialFalseRenderedHook.result.current[0]).toEqual(false);
-		};
-		testFalseInitial();
-
-		const testTrueInitial = () => {
-			const initialTrueRenderedHook = setUpRenderedHook('did', true);
-			expect(initialTrueRenderedHook.result.current[0]).toEqual(true);
-		};
-		testTrueInitial();
-	});
-
 	it('should be able to set values imperatively', () => {
-		const renderedHook = setUpRenderedHook('did', false);
+		const renderedHook = setUpRenderedHook();
 
 		const { result } = renderedHook;
 		const { current } = result;
@@ -44,7 +25,7 @@ describe('useKeyboardAwareState', () => {
 
 	it('should handle emitted events when its holding component has been mounted', () => {
 		const testDidEvent = () => {
-			const didEventRenderedHook = setUpRenderedHook('did', false);
+			const didEventRenderedHook = setUpRenderedHook();
 
 			act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName));
 			expect(didEventRenderedHook.result.current[0]).toEqual(true);
@@ -55,7 +36,7 @@ describe('useKeyboardAwareState', () => {
 		testDidEvent();
 
 		const testWillEvent = () => {
-			const willEventRenderedHook = setUpRenderedHook('will', false);
+			const willEventRenderedHook = setUpRenderedHook('will');
 
 			act(() => Keyboard.emit('keyboardWillShow' as KeyboardEventName));
 			expect(willEventRenderedHook.result.current[0]).toEqual(true);
@@ -66,8 +47,30 @@ describe('useKeyboardAwareState', () => {
 		testWillEvent();
 	});
 
-	it('should handle only emitted events it was bound to', () => {
-		const renderedHook = setUpRenderedHook('did', false);
+	it('should subscribe to the native keyboard events', () => {
+		const mockListener = {
+			remove: jest.fn(),
+		};
+		const originalAddListener = Keyboard.addListener;
+		const mockAddListener = jest.fn().mockReturnValue(mockListener);
+
+		Keyboard.addListener = mockAddListener;
+
+		const addListenerSpy = jest.spyOn<typeof Keyboard, keyof typeof Keyboard>(Keyboard, 'addListener');
+		const removeListenerSpy = jest.spyOn(mockListener, 'remove');
+		const renderedHook = setUpRenderedHook();
+
+		expect(addListenerSpy).toHaveBeenCalled();
+
+		renderedHook.unmount();
+
+		expect(removeListenerSpy).toHaveBeenCalled();
+
+		Keyboard.addListener = originalAddListener;
+	});
+
+	it('should handle only emitted events it was subscribed to', () => {
+		const renderedHook = setUpRenderedHook();
 
 		act(() => Keyboard.emit('keyboardWillShow' as KeyboardEventName));
 		expect(renderedHook.result.current[0]).toEqual(false);
@@ -77,7 +80,7 @@ describe('useKeyboardAwareState', () => {
 	});
 
 	it('should not handle emitted events when its holding component has been unmounted', () => {
-		const renderedHook = setUpRenderedHook('did', false);
+		const renderedHook = setUpRenderedHook();
 
 		// Unmount the hook's holding component to deregister the listeners.
 		renderedHook.unmount();
@@ -89,36 +92,91 @@ describe('useKeyboardAwareState', () => {
 		expect(renderedHook.result.current[0]).toEqual(false);
 	});
 
+	it('should generate the event object in each event handler', () => {
+		let dimensions: Partial<ScreenRect> | undefined = undefined;
+
+		const showEvent: KeyboardEvent = {
+			isEventFromThisApp: true,
+			duration: 250,
+			easing: 'keyboard',
+			startCoordinates: {
+				height: 233,
+				screenX: 0,
+				screenY: 812,
+				width: 375,
+			},
+			endCoordinates: {
+				height: 336,
+				screenX: 0,
+				screenY: 476,
+				width: 375,
+			},
+		};
+		const hideEvent: KeyboardEvent = {
+			isEventFromThisApp: true,
+			duration: 250,
+			easing: 'keyboard',
+			startCoordinates: {
+				height: 336,
+				screenX: 0,
+				screenY: 476,
+				width: 375,
+			},
+			endCoordinates: {
+				height: 336,
+				screenX: 0,
+				screenY: 812,
+				width: 375,
+			},
+		};
+
+		renderHook(() => useKeyboardAwareState({
+			onShow(event) {
+				dimensions = event.endCoordinates;
+			},
+			onHide(event) {
+				dimensions = event.endCoordinates;
+			}
+		}));
+
+		expect(dimensions).toBeUndefined();
+
+		act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName, showEvent));
+		expect(dimensions).toBeDefined();
+		expect(dimensions!.screenY).toEqual(476);
+
+		dimensions = undefined;
+		expect(dimensions).toBeUndefined();
+
+		act(() => Keyboard.emit('keyboardDidHide' as KeyboardEventName, hideEvent));
+		expect(dimensions).toBeDefined();
+		expect(dimensions!.screenY).toEqual(812);
+	});
+
 	it('should update its callback when its holding component\'s props and state has changed', () => {
 		class SideEffect {
 			value: number = 0;
-
-			setValue(value: number) {
-				this.value = value;
-			}
-
-			getValue() {
-				return this.value;
+			setValueWithIncrement(value: number, increment: number) {
+				this.value = value + increment;
 			}
 		}
-
+ 
 		const sideEffect = new SideEffect();
+		const increment = 10;
 
 		const renderedHook = renderHook((props) => {
 			const [ count, setCount ] = useState(0);
-			const [ keyboardShown, setKeyboardShown ] = useKeyboardAwareState(false, {
-				when: 'did',
-				onShow(event, setKeyboardShown) {
+			const [ keyboardShown, setKeyboardShown ] = useKeyboardAwareState({
+				onShow(event) {
 					// `count` refers to count returned from useState. Normally, it's supposed to be a dependency.
 					setCount(count + 1);
-					setKeyboardShown(true);
-					sideEffect.setValue(props.value);
+					sideEffect.setValueWithIncrement(props.value, increment);
+					event
 				},
-				onHide(event, setKeyboardShown) {
+				onHide(event) {
 					// `count` refers to count returned from useState. Normally, it's supposed to be a dependency.
 					setCount(count + 1);
-					setKeyboardShown(false);
-					sideEffect.setValue(props.value);
+					sideEffect.setValueWithIncrement(props.value, increment);
 				},
 			});
 
@@ -136,7 +194,7 @@ describe('useKeyboardAwareState', () => {
 
 		act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(1);
-		expect(sideEffect.getValue()).toStrictEqual(0);
+		expect(sideEffect.value).toStrictEqual(10);
 
 		renderedHook.rerender({
 			value: 2,
@@ -144,7 +202,7 @@ describe('useKeyboardAwareState', () => {
 
 		act(() => Keyboard.emit('keyboardDidHide' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(2);
-		expect(sideEffect.getValue()).toStrictEqual(2);
+		expect(sideEffect.value).toStrictEqual(12);
 
 		renderedHook.rerender({
 			value: 4,
@@ -152,7 +210,7 @@ describe('useKeyboardAwareState', () => {
 
 		act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(3);
-		expect(sideEffect.getValue()).toStrictEqual(4);
+		expect(sideEffect.value).toStrictEqual(14);
 
 		renderedHook.rerender({
 			value: 6,
@@ -160,14 +218,14 @@ describe('useKeyboardAwareState', () => {
 
 		act(() => Keyboard.emit('keyboardDidHide' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(4);
-		expect(sideEffect.getValue()).toStrictEqual(6);
+		expect(sideEffect.value).toStrictEqual(16);
 
-		sideEffect.setValue(8);
+		sideEffect.setValueWithIncrement(8, increment);
 
 		// The value of sideEffect.value should still be `6`
 		// since it's still not passed to props at this time.
 		act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(5);
-		expect(sideEffect.getValue()).toStrictEqual(6);
+		expect(sideEffect.value).toStrictEqual(16);
 	});
 });

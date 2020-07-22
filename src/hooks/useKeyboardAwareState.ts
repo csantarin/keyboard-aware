@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, Dispatch, SetStateAction } from 'react';
-import { Keyboard, KeyboardEvent, KeyboardEventListener, KeyboardEventName } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard, KeyboardEventListener, KeyboardEventName } from 'react-native';
 
 export interface KeyboardAwareStateOptions {
 	/**
@@ -10,33 +10,30 @@ export interface KeyboardAwareStateOptions {
 	 */
 	when?: 'will' | 'did';
 	/**
-	 * Handles the `keyboardWillShow`/`keyboardDidShow` event. Provides the keyboard event object and the state dispatcher which allows the callback to update the state.
+	 * Handles the `keyboardWillShow`/`keyboardDidShow` event. Provides the keyboard event object.
 	 *
 	 * @param {KeyboardEvent} event The React Native keyboard event object.
-	 * @param {Dispatch<SetStateAction<boolean>>} setKeyboardShown The React state dispatcher which updates the keyboardShown state variable. Invoke the dispatcher to explicitly update the state.
 	 */
-	onShow?: (event: KeyboardEvent, setKeyboardShown: Dispatch<SetStateAction<boolean>>) => void;
+	onShow?: KeyboardEventListener;
 	/**
-	 * Handles the `keyboardWillHide`/`keyboardDidHide` event. Provides the keyboard event object and the state dispatcher which allows the callback to update the state.
+	 * Handles the `keyboardWillHide`/`keyboardDidHide` event. Provides the keyboard event object.
 	 *
 	 * @param {KeyboardEvent} event The React Native keyboard event object.
-	 * @param {Dispatch<SetStateAction<boolean>>} setKeyboardShown The React state dispatcher which updates the keyboardShown state variable. Invoke the dispatcher to explicitly update the state.
 	 */
-	onHide?: (event: KeyboardEvent, setKeyboardShown: Dispatch<SetStateAction<boolean>>) => void;
+	onHide?: KeyboardEventListener;
 }
 
 /**
- * Returns a stateful boolean value indicating the visibility of the native keyboard, and a function to update it.
- * Attaches handlers to the native keyboard event upon component mount, which are deattached when the component unmounts.
+ * Returns a stateful boolean value indicating the visibility of the native keyboard.
+ * Attaches handlers to the native keyboard events upon component mount, which are deattached when the component unmounts.
  *
- * @param {boolean} [intialState=false] Starting value.
  * @param {KeyboardAwareStateOptions} options Listener options.
  */
-export const useKeyboardAwareState = (intialState: boolean = false, options: KeyboardAwareStateOptions = {}) => {
+export const useKeyboardAwareState = (options: KeyboardAwareStateOptions = {}) => {
 	const {
 		when = 'did',
-		onShow,
-		onHide,
+		onShow = () => {},
+		onHide = () => {},
 	} = options;
 
 	const SHOW_EVENT: KeyboardEventName = when === 'did' ? 'keyboardDidShow' : 'keyboardWillShow';
@@ -49,27 +46,16 @@ export const useKeyboardAwareState = (intialState: boolean = false, options: Key
 	onShowRef.current = onShow;
 	onHideRef.current = onHide;
 
-	const [ keyboardShown, setKeyboardShown ] = useState(intialState);
-
-	// Offer a utility function to perform a simple boolean flip.
-	const toggleKeyboardShown = () => {
-		setKeyboardShown(state => !state);
-	};
+	const [ keyboardShown, setKeyboardShown ] = useState(false);
 
 	// Handle the incoming event, regardless of whether or not a handler has been provided.
 	const handleShow: KeyboardEventListener = (event) => {
-		if (!onShowRef.current) {
-			return;
-		}
-
-		onShowRef.current(event, setKeyboardShown);
+		setKeyboardShown(state => !state);
+		onShowRef.current(event);
 	};
 	const handleHide: KeyboardEventListener = (event) => {
-		if (!onHideRef.current) {
-			return;
-		}
-
-		onHideRef.current(event, setKeyboardShown);
+		setKeyboardShown(state => !state);
+		onHideRef.current(event);
 	};
 
 	// Do listener attach and detach during didMount and willUnmount only.
@@ -86,10 +72,10 @@ export const useKeyboardAwareState = (intialState: boolean = false, options: Key
 	return [
 		keyboardShown,
 		setKeyboardShown,
-		toggleKeyboardShown,
 	] as [
 		boolean,
-		Dispatch<SetStateAction<boolean>>,
-		() => void,
+		typeof setKeyboardShown
 	];
 };
+
+export default useKeyboardAwareState;

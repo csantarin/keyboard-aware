@@ -4,12 +4,33 @@ import { useKeyboardAwareState } from './hooks';
 import { KeyboardAwareWarning } from './KeyboardAwareWarning';
 
 export const KeyboardAware: FunctionComponent = (props) => {
-	const [ keyboardShown ] = useKeyboardAwareState(false, {
-		onShow(event, setKeyboardShown) {
-			setKeyboardShown(true);
+	// onShow and onHide event objects should look like this:
+	/**
+	{
+		isEventFromThisApp: true,
+		duration: 250,
+		easing: 'keyboard',
+		startCoordinates: {
+			height: 233,
+			screenX: 0,
+			screenY: 812,
+			width: 375,
 		},
-		onHide(event, setKeyboardShown) {
-			setKeyboardShown(false);
+		endCoordinates: {
+			height: 336,
+			screenX: 0,
+			screenY: 476,
+			width: 375,
+		},
+	};
+	*/
+
+	const [ keyboardShown, setKeyboardShown ] = useKeyboardAwareState({
+		onShow(event) {
+			console.log('onShow', event);
+		},
+		onHide(event) {
+			console.log('onHide', event);
 		},
 	});
 
