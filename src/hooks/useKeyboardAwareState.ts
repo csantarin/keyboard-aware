@@ -3,9 +3,9 @@ import { Keyboard, KeyboardEventListener, KeyboardEventName } from 'react-native
 
 export interface KeyboardAwareStateOptions {
 	/**
-	 * Determines which events the handlers will be attached to.
+	 * Determines which events the handlers will be attached to. Defaults to `'did'` in `useKeyboardAwareState()`
 	 *
-	 * - `will` maps to `keyboardWill*` events.
+	 * - `will` maps to `keyboardWill*` events. (**NOTE:** [Unavaialble in Android.](https://reactnative.dev/docs/keyboard#addlistener))
 	 * - `did` maps to `keyboardDid*` events.
 	 */
 	when?: 'will' | 'did';
