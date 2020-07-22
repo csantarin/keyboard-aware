@@ -48,6 +48,9 @@ describe('useKeyboardAwareState', () => {
 	});
 
 	it('should subscribe to the native keyboard events', () => {
+		// Create mock listeners: https://stackoverflow.com/questions/52766963/mocking-monitoring-keyboard-events-with-jest-in-react-native
+		// Spy on event to detect whether it has been called: https://github.com/facebook/jest/issues/9102
+		// How to mock events in case this stops working: https://github.com/facebook/react-native/issues/26579
 		const mockListener = {
 			remove: jest.fn(),
 		};
