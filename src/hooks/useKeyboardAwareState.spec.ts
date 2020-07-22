@@ -170,13 +170,12 @@ describe('useKeyboardAwareState', () => {
 		const renderedHook = renderHook((props) => {
 			const [ count, setCount ] = useState(0);
 			const [ keyboardShown, setKeyboardShown ] = useKeyboardAwareState({
-				onShow(event) {
+				onShow() {
 					// `count` refers to count returned from useState. Normally, it's supposed to be a dependency.
 					setCount(count + 1);
 					sideEffect.setValueWithIncrement(props.value, increment);
-					event
 				},
-				onHide(event) {
+				onHide() {
 					// `count` refers to count returned from useState. Normally, it's supposed to be a dependency.
 					setCount(count + 1);
 					sideEffect.setValueWithIncrement(props.value, increment);
