@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useState } from 'react';
-import { Keyboard, KeyboardEvent, KeyboardEventName, ScreenRect } from 'react-native';
+import { Keyboard, KeyboardEvent, KeyboardEventName, NativeEventEmitter } from 'react-native';
 
 import { useKeyboardAwareState } from './useKeyboardAwareState';
 
@@ -234,5 +234,7 @@ describe('useKeyboardAwareState', () => {
 		act(() => Keyboard.emit('keyboardDidShow' as KeyboardEventName));
 		expect(renderedHook.result.current.count).toStrictEqual(5);
 		expect(sideEffect.value).toStrictEqual(16);
+
+		console.log('DEBUGME', Keyboard, NativeEventEmitter, Keyboard.emit, 'DEBUGME');
 	});
 });
